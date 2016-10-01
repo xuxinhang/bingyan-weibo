@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="">
+ <head>
+  <meta charset="UTF-8">
+  <title>New WeiBo</title>
+<script type="text/javascript">
+<!--
+String.prototype.atString = function(){
+	endMarks = "@# \n";
+	text = this.replace('@','').replace(' ','').replace('#','').replace('\n','').replace('@','');
+	return text;
+}
+
+topicArray = [
+'央视新闻',
+'丁宝刚',
+'阳光水岸111',
+'微博雷达',
+'华西都市报',
+'微博辟谣',
+'武汉市小动物',
+'东方梦工厂',
+'Hust新闻眼',
+'陈潇simon',
+]
+
+//-->
+</script>
+<style>
+body {padding:0; margin:0;}
+
+
+.container{
+	width:600px;
+	height:200px;
+	background:#FFFFFF;
+	border:medium gray solid;
+}
+
+.new-weibo {
+}
+
+.text-box {
+	position:static;
+	top:15px;
+	left:;
+}
+
+
+.text-style {
+font: 18px 'Arial','Microsoft YaHei';
+line-height:24px;
+padding:5px;
+height:200px;
+width:500px;
+overflow-x: hidden;
+overflow-y: auto;
+
+}
+
+.atList {
+	position:absolute;
+	height:auto;
+	width:160px;
+	background:#FFF;
+	border:#ff9900 1px solid;
+}
+
+.atList.hidden {
+	background:gray;
+	display:none;
+}
+
+.atList ul {
+	list-style:none;
+	padding:1px;
+	margin:0px;
+}
+
+.atList .model {
+	display:none;
+}
+
+.atList li {
+	padding:2px 2px 2px 2px;
+	color:#888;
+}
+
+.atList li:hover {
+	background:#EEE;
+	color:orange;
+}
+
+.atList li:after {
+	content:attr(data-name);
+}
+
+#textClone {
+	position:fixed;
+	top:40px;
+	left:30px;
+	visibility:hidden;
+}
+
+</style>
+ </head>
+ <body>
+<div id="" class="container">
+ <div class="new-weibo" style="">
+   <div class="text-box">
+   <textarea class="text-style" id="text" name="weibo-box" rows='4' style="width:100%;">
+   </textarea>
+   </div>
+ </div>
+
+
+</div>
+
+<div class="text-clone text-style" id="textClone" style="white-space:pre-wrap;">
+</div>
+<div class="atList" id="atList">
+ <ul id="topics">
+ <!--temp start-->
+ <li data-name="qwe" class="model">qwe</li>
+ <!--temp end-->
+ </ul>
+</div>
+
+
+ <script>
+
+texto = document.getElementById('text');
+texto.addEventListener('focus',function(){textBox.textParser();});
+texto.addEventListener('keyup',function(){textBox.textParser();});
+texto.addEventListener('keydown',function(){textBox.textParser();});
+texto.addEventListener('mouseup',function(){textBox.textParser();});
+texto.addEventListener('input',function(){textBox.textParser();});
+
+
+
+textBox = {
+	'texto':document.getElementById('text'),
+
+	'textParser':function(){
+		el = this.texto;
+
+		sel=this.getCursor();
+
+		strPos = this.findAtString(sel.start);
+		if(strPos){
+			kw = el.value.substring(strPos.startPos,strPos.curPos);
+			curPx = this.getCursorXY();
+			
+			atList.showList(kw,curPx.left,curPx.top);
+		}else{
+			atList.hideList();
+		}
+	},
+
+	'getCursor':function(){
+		return {'start':this.texto.selectionStart,'end':this.texto.selectionEnd};
+	},
+
+	'setCursor':function(pos,end){
+		this.texto.focus();
+		this.texto.selectionStart = pos;
+		this.texto.selectionEnd = end||pos;
+	},
+
+	'getCursorXY':function(){
+		var clo = document.getElementById('textClone');
+		cont = this.texto.value;
+
+		pos=this.findAtString();
+		clo.innerHTML = cont.substring(0,pos.atPos) + '<span>|</span>' + cont.substring(pos.atPos);
+		
+		spanElem = clo.getElementsByTagName('span')[0];
+		return {'top': spanElem.offsetTop+spanElem.offsetHeight, 'left':spanElem.offsetLeft};
+	},
+
+
+	'findAtString':function(focus){
+		if(!focus) focus=this.getCursor().start;
+		var cont=this.texto.value;
+		var startPos, endPos,atPos;
+		endMarks = "# \n";
+		startMarks = '@';
+
+		//Find Start-End Area
+		for(var i=focus-1;i>=0;i--){
+			//alert(cont[i]);
+			if(endMarks.indexOf(cont[i])>=0){
+				return false;
+			}
+			if(startMarks.indexOf(cont[i])>=0){
+				startPos=i+1;
+				atPos=i;
+				break;
+			}
+		}
+		if(i<=0){
+			return false;
+		}
+
+		endPos = cont.length-1;
+		for(var i=focus;i<cont.length;i++){
+			if(endMarks.search(cont[i])+1){
+				endPos= i;
+				break;
+			}
+		}
+		return {'startPos':startPos,'atPos':atPos,'endPos':endPos,'curPos':focus};
+	},
+
+	'replaceAtString':function(rep,focus){
+		var cont=this.texto.value;
+		pos = this.findAtString(focus);
+		if(!pos){
+			return cont;
+		}
+		rep = rep.atString();
+		if(rep!=''){
+			return cont.substring(0,pos.atPos) + '@' + rep + ' ' +cont.substring(pos.endPos+1);
+		}else{
+			return cont;
+		}
+	},
+
+	'completeAtString':function(rep,focus){
+		var cont=this.texto.value;
+		if(!focus) focus=this.getCursor().start;
+
+		pos = this.findAtString(focus);
+		if(!pos){
+			return cont;
+		}
+
+		rep = rep.atString();
+		if(rep!=''){
+			newcont = cont.substring(0,pos.atPos) + '@' + rep + ' ' +cont.substring(pos.curPos);
+			this.texto.value = newcont;
+			//Change Focus
+			this.setCursor(pos.atPos + rep.length + 2);
+		}else{
+			
+		}
+		atList.hideList();
+	},
+
+
+	//console.log(strPos?(strPos.startPos+'%'+strPos.endPos):'none');
+	//console.log(replaceAtString(el.value, sel.start,'Cool# @ 、你 的产生的都是到付到付看您的v你看DVN'));
+
+}
+
+atList = 
+{
+	'node':document.getElementById('atList'),
+	'showList':function(keyword,leftPx,topPx){
+		el = this.node;
+		if(el.className.search('hidden')>=0){
+			el.className = el.className.replace('hidden','');
+		}
+		el.style.top  =(topPx+10) +'px';
+		el.style.left =leftPx+'px';
+		this.loadList(keyword);
+	},
+
+	'hideList':function(){
+		el = this.node;
+		if(el.className.search('hidden')==-1){
+			el.className += ' hidden';
+		}
+	},
+
+	'loadList':function(keyword){
+		el = this.node;
+		ulElem = document.getElementById('topics');
+		liModel = document.getElementById('topics').getElementsByClassName('model')[0];
+
+		//Clear old items
+		la = ulElem.getElementsByClassName('enabled');
+		lal = la.length;
+		for(var i=lal-1;i>=0;i--){
+			ulElem.removeChild(la[i]);
+		}
+		//Add new
+		for(var i=0;i<this.topicArray.length;i++){
+			mo = liModel.cloneNode(true);
+			tp = this.topicArray[i];
+			if(keyword&&(!this.filter(keyword,tp))){
+				continue;
+			}
+			mo.innerHTML='';
+			mo.dataset.name = tp;
+			mo.className = 'enabled';
+			mo.addEventListener('click',topicItemClickEvent);
+			ulElem.appendChild(mo);
+		}
+	},
+
+	'filter':function(keyword,checked){
+		if(checked.search(keyword)+1)
+		return true;
+	},
+
+	'topicArray': [
+	'央视新闻',
+	'丁宝刚',
+	'阳光水岸111',
+	'微博雷达',
+	'华西都市报',
+	'微博辟谣',
+	'武汉市小动物',
+	'东方梦工厂',
+	'Hust新闻眼',
+	'陈潇simon',
+	],
+
+}
+
+function topicItemClickEvent(){
+	textBox.completeAtString(this.dataset.name,textBox.getCursor().start);
+}
+
+clo = document.getElementById('textClone');
+texto=document.getElementById('text');
+clo.style.left = texto.offsetLeft+'px';
+clo.style.top = texto.offsetTop+'px';
+
+  </script>
+ </body>
+</html>
